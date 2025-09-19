@@ -4,7 +4,7 @@
 # Loads in all the different R scripts for the models 
 # The pathways are specific to my local drive so feel free to change them to run it 
 # @author: Sakura 
-# @date: 9/11/25
+# @date: 9/19/25
 # ============================
 
 # NOTES:
@@ -31,5 +31,6 @@ parzon_df <- st_drop_geometry(parzon)
 # pmap passes each row as a list into calc_hard_costs
 parzon$hard_cost <- pmap_dbl(parzon_df, ~ calc_hard_costs(list(...)))
 parzon$soft_cost <- calc_soft_costs(parzon$hard_cost)
+
 
 
