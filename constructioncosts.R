@@ -3,11 +3,11 @@
 # 
 # Includes hard & soft construction cost estimates for now 
 # @author: Sakura 
-# @date: 9/11/25
+# @date: 9/19/25
 #=========================================================
 
 
-# Construction cost table for RData Housing parzon
+# parzon zoning classes df
 construction_costs <- data.frame(
   type = c("A_low_denisty", "A_mid_denisty", "A_high_density",
            "AMX_low_density", "AMX_mid_density", "AMX_high_density"),
@@ -16,7 +16,7 @@ construction_costs <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Mapping from zoning code to construction type
+# mapping from zoning code to construction type
 zone_to_type <- list(
   "A-1" = "A_low_denisty",
   "A-2" = "A_mid_denisty",
@@ -26,10 +26,11 @@ zone_to_type <- list(
   "AMX-3" = "AMX_high_density"
 )
 
-# Calculate hard costs for a parcel
+# calculate hard costs for a parcel
 calc_hard_costs <- function(parcel_row) {
   zone <- as.character(parcel_row$zone_class)
   
+  # in case we use a different data set
   if (!zone %in% names(zone_to_type)) {
     warning(paste("Zone class not recognized:", zone))
     return(NA)
@@ -41,8 +42,10 @@ calc_hard_costs <- function(parcel_row) {
   return(parcel_row$lot_sqft * rate)
 }
 
-# Calculates soft costs as a % of hard costs 
-# Must find an actual ratio, google said 30% is avg across america
+# calculates soft costs as a % of hard costs 
+# must find an actual ratio, internet said 30% is avg across america
 calc_soft_costs <- function(hard_cost, pct = 0.3) {
   return(hard_cost * pct)
 }
+
+
