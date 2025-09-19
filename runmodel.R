@@ -13,6 +13,8 @@
 # libraries to work with sf (drops geom)
 library(sf)
 library(purrr) 
+library(dplyr)
+library(tidyr)
 
 # loads global variables
 source("C:/Users/1saku/Desktop/Housing/src/globalvariables.R")
@@ -25,12 +27,14 @@ source("C:/Users/1saku/Desktop/Housing/src/constructioncosts.R")
 load(file = "C:/Users/1saku/Desktop/Housing/RData") 
 
 # drops geometry column
-parzon_df <- st_drop_geometry(parzon)
+parzon_df <- st_drop_geometry(parzon) 
 
-# calculates construction from constructioncosts.R
-# pmap passes each row as a list into calc_hard_costs
-parzon$hard_cost <- pmap_dbl(parzon_df, ~ calc_hard_costs(list(...)))
-parzon$soft_cost <- calc_soft_costs(parzon$hard_cost)
+# applies constructioncosts.R
+# expands FAR, buildable_sqft, hard_cost, soft_cost, total_estimated_cost
+construction_costs_df <- parzon_df %>%
+  select(tmk, cty_tmk, zone_class, lot_sqft) %>%
+  mutate(costs = pmap(list(zone_class, lot_sqft), calc_construction_costs)) %>%
+  unnest_wider(costs)  
 
 
 
