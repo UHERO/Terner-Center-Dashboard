@@ -13,4 +13,6 @@ housing-dashboard/
 - Update the global variables
 - Introduce the global vraibles into the 'makeshift' proforma model
 - Have extra functions such as RLVLV and NPV per wquity dollar
-- Model the bank part for equity dollars
+- Model the bank part for equity dollars 
+
+
