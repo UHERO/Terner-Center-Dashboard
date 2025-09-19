@@ -7,21 +7,29 @@
 # @date: 9/11/25
 # ============================
 
+# NOTES:
+# parzon is a sf object = data frame w/ special geom column
 
+# libraries to work with sf (drops geom)
+library(sf)
+library(purrr) 
 
-# Loads global variables
+# loads global variables
 source("C:/Users/1saku/Desktop/Housing/src/globalvariables.R")
 
-# Loads cost functions
+# loads cost functions
 source("C:/Users/1saku/Desktop/Housing/src/constructioncosts.R")
 
-# Loads Housing RData parzon data
-load("C:/Users/1saku/Desktop/Housing/RData")  # gives you `parzon`
+# loads Housing RData parzon data
+# this gives you 'parzon': parcels & zoning classes from Emi's work
+load(file = "C:/Users/1saku/Desktop/Housing/RData") 
 
-# just an example to calculate costs for the first 5 parcels
-parzon$hard_cost <- apply(parzon[ , ], 1, function(row) calc_hard_costs(as.list(row)))
+# drops geometry column
+parzon_df <- st_drop_geometry(parzon)
+
+# calculates construction from constructioncosts.R
+# pmap passes each row as a list into calc_hard_costs
+parzon$hard_cost <- pmap_dbl(parzon_df, ~ calc_hard_costs(list(...)))
 parzon$soft_cost <- calc_soft_costs(parzon$hard_cost)
 
-# quick peek at the df
-head(parzon[, c("tmk", "zone_class", "lot_sqft", "hard_cost", "soft_cost")])
 
