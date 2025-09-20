@@ -1,8 +1,9 @@
 #=========================================================
 # Construction Costs R Script:
 #
-# Creates a new df with hard + soft costs, total cost, max units
-# Keeps tmk, city_tmk, zone_class from 'parzon'
+# The pathways are specific to my local drive so feel free to change them to run it.
+# Creates a new df with hard + soft costs & affordable + max units.
+# Keeps tmk, city_tmk, zone_class from 'parzon'.
 # @author: Sakura
 # @date: 9/19/25
 #=========================================================
@@ -14,12 +15,17 @@ library(dplyr)
 library(tidyr)
 
 # GLOBAL VARIABLES:
-# soft costs: regulatory costs, permits, zoning, environmental approvals  
-# perhaps create into a different R script (later on)
+# need to implement regulatory costs, permits, zoning, & EA/EIS into soft costs  
 soft_pct   <- 0.3 
-# random average unit size in sqft
-average_unit_sqft <- 900  
+# random average unit size in sqft, need to change
+average_unit_sqft <- 900   
 
+# loads Housing RData parzon data
+# this gives you 'parzon': parcels & zoning classes from Emi's work
+load(file = "C:/Users/1saku/Desktop/Housing/RData") 
+
+# parzon is a sf object, drop geometry column, maybe attach it later
+parzon_df <- st_drop_geometry(parzon) 
 
 # construction cost table
 construction_costs <- data.frame(
@@ -66,7 +72,9 @@ calc_construction_costs <- function(zone, lot_sqft) {
   # max units allowed
   max_units <- floor(buildable_sqft / average_unit_sqft) 
   
-  # ADD AFORDABLE HOUSING UNITS
+  # using the miro inclusionary housing, other projects rental affordable housing rate 
+  # need to implement inclusionary housing (ie. Transit Project Rates)
+  affordable_units <- round(max_units * 0.05)
   
   # construction costs
   hard_cost <- buildable_sqft * rate
@@ -75,10 +83,17 @@ calc_construction_costs <- function(zone, lot_sqft) {
   
   return(c(
     max_units = max_units,
+    affordable_units = affordable_units,
     hard_cost = hard_cost,
     soft_cost = soft_cost,
     total_construct_cost = total_construct_cost
   ))
 }
+
+# new df with hard + soft + total costs, & affordable + max units
+construction_costs_df <- parzon_df %>%
+  select(tmk, cty_tmk, zone_class, lot_sqft) %>%
+  mutate(costs = pmap(list(zone_class, lot_sqft), calc_construction_costs)) %>%
+  unnest_wider(costs)  
 
 
