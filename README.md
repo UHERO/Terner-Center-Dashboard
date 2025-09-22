@@ -24,4 +24,9 @@ Housing.Rproj
 - [Honolulu Inclusionary Housing Flowchart](https://miro.com/app/board/uXjVJaPZAJQ=/)  
 
 ## Notes 
-- Filepathing is unique to Sakura, change when needed
+- Filepathing is unique to Sakura, change when needed 
+
+## Usage 
+- Main branch: fully working/developed code
+- Develop: different workspace for code still in progress
+- Features: branches in develop for specific tasks
