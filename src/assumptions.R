@@ -1,7 +1,7 @@
 #=========================================================
 # Assumed Parameters & Variables R Script:
 #
-# Centralizes parameters for pro forma model
+# Centralized parameters for pro forma model
 # Example: assumptions$construction$low_rise$wood
 #
 # @author: Sakura
@@ -111,7 +111,13 @@ assumptions <- list(
     ),
     
     # low income below-market-rate share of dwelling units
-    below_market_unit_share = NA
+    below_market_unit_share = NA, 
+    
+    # cost of market price rent per unit per month (change)
+    market_rent = 2500,
+    
+    # cost of affordable rent per unit per month (change depending on linkage/threshold?)
+    affordable_rent = 1200
   ),
   
   # REGULATORY VARIABLES
@@ -141,7 +147,9 @@ assumptions <- list(
     cap_rate_sale = NA,
     preferred_return = NA,
     apperciation = NA,
-    operate_revenue = NA
+    operate_revenue = NA, 
+    # 35% of EGI is operating expenses (change)
+    op_ex_ratio = 0.35
   ),
   
   # CAP RATE VARIABLES
@@ -170,6 +178,6 @@ assumptions <- list(
       units_2_4  = NA,
       units_5_49 = NA,
       units_50_plus = NA
-    )
+    ) 
   )
 )
