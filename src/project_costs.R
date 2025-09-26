@@ -78,7 +78,11 @@ calc_construction_costs <- function(zone, lot_sqft, parcel_row, assumptions) {
   # need to implement inclusionary housing (ie. Transit Project Rates)
   # inclusionary housing placeholder, perhaps create a function in assumptions?
   # for now using the for rent affordable unit share rate
-  affordable_units <- round(max_units * 0.05)  
+  if(parcel_row$TOD == 1) {
+    affordable_units <- round(max_units * 0.15)  # 15% for TOD areas
+  } else {
+    affordable_units <- round(max_units * 0.05)  # 5% for non-TOD areas
+  }
   
   # construction costs
   hard_cost <- buildable_sqft * rate
