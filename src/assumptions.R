@@ -5,21 +5,30 @@
 # Example: assumptions$construction$low_rise$wood
 #
 # @author: Sakura
-# @date: 9/20/25
+# @date: 9/26/25
 #=========================================================
 
+#=========================================================
 # NOTES: 
 # some variables are not used yet, the variables completely removed are listed
 # in the spreadsheet.
+#=========================================================
 
+#=========================================================
+# Global Variables: 
+#=========================================================
+# change this to select different unit type
+SELECTED_UNIT_TYPE <- "one_bb" 
+
+#=========================================================
+# Assumptions made: 
+# Look at pro forma variables spreadsheet for more info 
+#=========================================================
 # organized in nested list for easy access
 assumptions <- list(
   
   # CONSTRUCTION VARIABLES
   construction = list(
-    
-    # trivial, will be user input later
-    average_unit_sqft = 900,
     
     # hard construction cost per zone, need to change
     cost_per_zone = data.frame(
@@ -33,6 +42,46 @@ assumptions <- list(
       # placeholder percentage
       return(hard_cost * 0.3)
     }
+  ),
+  
+  # UNIT PARAMETERS 
+  # taken using max size of units for affordable rental housing units (32-2.9)
+  # using for both regular & affordable units
+  unit = list(
+    unit_size = list(
+      # studio 1 bath
+      studio = 500,
+      # 1 bed 1 bath
+      one_bb = 650, 
+      # two beds 1 bath
+      two_bb = 800,
+      # three beds 1.5 bath
+      three_bb = 1100
+    ), 
+    
+    # market price for regular units per month (for rent)
+    mkt_unit = list (
+      # studio 1 bath
+      studio_mkt = 1509,
+      # 1 bed 1 bath
+      one_bb_mkt = 1711, 
+      # two beds 1 bath
+      two_bb_mkt = 2201,
+      # three beds 1.5 bath
+      three_bb_mkt = 3731
+    ), 
+    
+    # affordable unit price per month (for rent) (change later) 
+    afd_unit = list(
+      # studio 1 bath
+      studio_afd = 1200,
+      # 1 bed 1 bath
+      one_bb_afd = 1300, 
+      # two beds 1 bath
+      two_bb_afd = 1700,
+      # three beds 1.5 bath
+      three_bb_afd = 3100
+    )
   ),
   
   # FAR / DENSITY PARAMETERS
@@ -111,13 +160,7 @@ assumptions <- list(
     ),
     
     # low income below-market-rate share of dwelling units
-    below_market_unit_share = NA, 
-    
-    # cost of market price rent per unit per month (change)
-    market_rent = 2500,
-    
-    # cost of affordable rent per unit per month (change depending on linkage/threshold?)
-    affordable_rent = 1200
+    below_market_unit_share = NA
   ),
   
   # REGULATORY VARIABLES
@@ -142,14 +185,18 @@ assumptions <- list(
   
   # FINANCE VARIABLES
   financing = list(
-    loan_to_cost = NA,
-    interest_rate = NA,
-    cap_rate_sale = NA,
-    preferred_return = NA,
-    apperciation = NA,
-    operate_revenue = NA, 
-    # 35% of EGI is operating expenses (change)
-    op_ex_ratio = 0.35
+    income = list(
+      loan_to_cost = NA,
+      interest_rate = NA,
+      cap_rate_sale = NA,
+      preferred_return = NA,
+      apperciation = NA,
+      operate_revenue = NA, 
+      # 35% of EGI is operating expenses (change)
+      op_ex_ratio = 0.35
+    ), 
+    # PSEUDO CODE (change)
+    loan_amount = NA
   ),
   
   # CAP RATE VARIABLES
@@ -179,5 +226,63 @@ assumptions <- list(
       units_5_49 = NA,
       units_50_plus = NA
     ) 
+  ), 
+  
+  # PARKING VARIABLES (need to change)
+  parking = list(
+    # parking fee per parking space per month
+    park_rate = 100,  
+    # average parking spaces per unit
+    spaces_per_unit = 1  
+  ),
+  
+  # OTHER INCOME (need to change)
+  income = list(
+    # application fees, lease renewal fees, etc.
+    apt_admin = list(
+      application_fee = 50,
+      lease_renewal = 200,
+      
+      # function to calculate total admin fees per unit per year
+      calc_annual_admin = function(turnover_rate = 0.3) {
+        # assumes 30% turnover rate (new applications)
+        # plus lease renewals for remaining 70%
+        return((assumptions$income$apt_admin$application_fee * turnover_rate) + 
+                 (assumptions$income$apt_admin$lease_renewal * (1 - turnover_rate)))
+      }
+    )
+  ),
+  
+  # OPERATING EXPENSES VARIABLES
+  expenses = list(
+    # Property management fees
+    property_mgmt = list(
+      fee_rate = 0.08,  # 8% of monthly rent collected
+      pass_through_rate = 0.5  # 50% gets passed to renters via higher rent
+    ),
+    
+    # insurance costs
+    insurance = list(
+      # property insurance per sq ft
+      property_per_sqft = 0.25,  
+      # general liability per unit per year
+      liability_per_unit = 150
+    ),
+    
+    # taxes & fees 
+    # should use assessed land value or average apartment property value?
+    taxes_fees = list(
+      property_tax_rate = 0.012
+    )
   )
+)
+
+# Allows for selection of unit size type
+assumptions$current_unit <- list(
+  type = SELECTED_UNIT_TYPE,
+  size_sqft = assumptions$unit$unit_size[[SELECTED_UNIT_TYPE]],
+  mkt_rent_annual = assumptions$unit$mkt_unit[[paste0(SELECTED_UNIT_TYPE, "_mkt")]] * 12,
+  afd_rent_annual = assumptions$unit$afd_unit[[paste0(SELECTED_UNIT_TYPE, "_afd")]] * 12,
+  mkt_rent_monthly = assumptions$unit$mkt_unit[[paste0(SELECTED_UNIT_TYPE, "_mkt")]],
+  afd_rent_monthly = assumptions$unit$afd_unit[[paste0(SELECTED_UNIT_TYPE, "_afd")]]
 )
