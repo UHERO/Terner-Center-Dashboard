@@ -21,8 +21,9 @@ Housing.Rproj
 ## Resources
 - Path to RData on the NAS: `Z:\work\research\housing\zoning\cch-zoning\RData`
 - [UHERO Google Drive Folder](https://drive.google.com/drive/folders/1hgTBZ4-xmxrQN5XRX8QaS8DMSH_GULah?usp=sharing)
-- [Global variables spreadsheet](https://docs.google.com/spreadsheets/d/1_sSlavakP_3b8Ssv547RV-63rOuHqrqrIfim9JED3XU/edit?usp=sharing)  
-- [Honolulu Inclusionary Housing Flowchart](https://miro.com/app/board/uXjVJaPZAJQ=/)  
+- [Pro Forma Variables Spreadsheet](https://docs.google.com/spreadsheets/d/1_sSlavakP_3b8Ssv547RV-63rOuHqrqrIfim9JED3XU/edit?usp=sharing)  
+- [Honolulu Inclusionary Housing Flowchart](https://miro.com/app/board/uXjVJaPZAJQ=/)
+- [IPDT Flowchart](https://miro.com/app/live-embed/uXjVJDi57jk=/?embedMode=view_only_without_ui&moveToViewport=-2298%2C-1870%2C3822%2C2086&embedId=247174178665)
 
 ## Notes 
 - Filepathing is unique to Sakura, change when needed 
