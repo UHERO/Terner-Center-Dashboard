@@ -19,9 +19,15 @@ Housing.Rproj
 - Think of statistical or rule-based models to estimate probabilities of development 
 
 ## Resources
-- Path to RData on the NAS: `Z:\work\research\housing\zoning\cch-zoning\RData`  
+- Path to RData on the NAS: `Z:\work\research\housing\zoning\cch-zoning\RData`
+- [UHERO Google Drive Folder](https://drive.google.com/drive/folders/1hgTBZ4-xmxrQN5XRX8QaS8DMSH_GULah?usp=sharing)
 - [Global variables spreadsheet](https://docs.google.com/spreadsheets/d/1_sSlavakP_3b8Ssv547RV-63rOuHqrqrIfim9JED3XU/edit?usp=sharing)  
 - [Honolulu Inclusionary Housing Flowchart](https://miro.com/app/board/uXjVJaPZAJQ=/)  
 
 ## Notes 
-- Filepathing is unique to Sakura, change when needed
+- Filepathing is unique to Sakura, change when needed 
+
+## Usage 
+- Main branch: fully working/developed code
+- Develop: different workspace for code still in progress
+- Features: branches in develop for specific tasks
