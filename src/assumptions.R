@@ -163,7 +163,7 @@ assumptions <- list(
     below_market_unit_share = NA
   ),
   
-  # REGULATORY VARIABLES
+  # REGULATORY VARIABLES?
   regulatory = list(
     fee_per_sf   = NA,
     fee_per_unit = NA,
@@ -177,31 +177,34 @@ assumptions <- list(
     months_construction = list(
       low_rise = c(12, 18),
       mid_rise = c(18, 24),
+      # use 36+ if open-ended
       high_rise = c(24, 36)  # use 36+ if open-ended
     ),
     absorption_units_per_month = NA,
     stable_months_at_sale = NA
   ), 
   
-  # FINANCE VARIABLES
+  # FINANCE VARIABLES (need to change)
   financing = list(
-    income = list(
-      loan_to_cost = NA,
-      interest_rate = NA,
+    loan = list(
+      loan_to_cost = 0.65,
+      # annual interest rate
+      interest_rate = 0.045,
       cap_rate_sale = NA,
       preferred_return = NA,
-      apperciation = NA,
-      operate_revenue = NA, 
-      # 35% of EGI is operating expenses (change)
-      op_ex_ratio = 0.35
+      apperciation = NA
     ), 
-    # PSEUDO CODE (change)
-    loan_amount = NA
+    # fees for financing costs
+    fees = list(
+      impact = NA, 
+      # bank fee %
+      origination = NA
+    )
   ),
   
   # CAP RATE VARIABLES
   cap_rates = list(
-    #look into if cap Rate: Multifamily Metro Mid & High Rise affects TOC zones
+    # look into if cap Rate: Multifamily Metro Mid & High Rise affects TOC zones
     metro = list(
       mid_high_A = c(0.0540, 0.0567),
       mid_high_B = c(0.0545, 0.0574),
@@ -255,10 +258,12 @@ assumptions <- list(
   
   # OPERATING EXPENSES VARIABLES
   expenses = list(
-    # Property management fees
+    # property management fees
     property_mgmt = list(
-      fee_rate = 0.08,  # 8% of monthly rent collected
-      pass_through_rate = 0.5  # 50% gets passed to renters via higher rent
+      # 8% of monthly rent collected
+      fee_rate = 0.08,  
+      # 50% gets passed to renters via higher rent
+      pass_through_rate = 0.5  
     ),
     
     # insurance costs
