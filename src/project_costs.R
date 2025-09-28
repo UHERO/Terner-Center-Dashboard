@@ -8,13 +8,40 @@
 # @date: 9/26/25
 #=========================================================
 
+#=========================================================
+# Global Variables: 
+#=========================================================
+
+# change this to select the sale type (for sale vs for rent)
+SELECTED_SALE_TYPE <- "for_rent" 
+
+sale_type <- list( 
+  for_rent = NA,
+  for_sale = NA
+  )
+
+# change this to select the affordable unit share 
+SELECTED_TOD_AFD <- "tod_15"
+SELECTED_OTHER_AFD <- "other_15"
+
+project_type <- list(
+  # all other projects afford unit % (for sale)
+  other_15 = 0.15, 
+  other_20 = 0.2,
+  # TOD project afford unit % (for sale)
+  tod_30 = 0.3, 
+  tod_35 = 0.35,  
+)
+
+#=========================================================
+
 # libraries
 library(sf)
 library(dplyr)
 library(tidyr)
 
 # load cost functions from assumption parameters
-source("C:/Users/1saku/Desktop/Housing/src/Assumptions.R")
+source("C:/Users/1saku/Desktop/Housing/src/assumptions.R")
 
 # loads RData parzon data
 # this gives you 'parzon': parcels & zoning classes from Emi's work
@@ -75,15 +102,24 @@ calc_construction_costs <- function(zone, lot_sqft, parcel_row, assumptions) {
   # max units
   max_units <- floor(buildable_sqft / assumptions$current_unit$size_sqft)
   
-  # need to implement inclusionary housing (ie. Transit Project Rates)
-  # inclusionary housing placeholder, perhaps create a function in assumptions?
-  # for now using the for rent affordable unit share rate
-  if(parcel_row$TOD == 1) {
-    affordable_units <- round(max_units * 0.15)  # 15% for TOD areas
-  } else {
-    affordable_units <- round(max_units * 0.05)  # 5% for non-TOD areas
+  # need to implement inclusionary housing affordability years (ie. TOD affordable units share)
+  # right now assumes the share for the whole time 
+  if(SELECTED_SALE_TYPE == "for_rent") {
+    # for rent calc
+    if(parcel_row$TOD == 1) {
+      affordable_units <- round(max_units * 0.15)  # 15% for TOD rental
+    } else {
+      affordable_units <- round(max_units * 0.05)  # 5% for non-TOD rental
+    }
+  } else if(SELECTED_SALE_TYPE == "for_sale") {
+    # for sale calc
+    if(parcel_row$TOD == 1) {
+      affordable_units <- round(max_units * project_type[[SELECTED_TOD_AFD]])
+    } else { 
+      affordable_units <- round(max_units * project_type[[SELECTED_OTHER_AFD]])
+    }
   }
-  
+
   # construction costs
   hard_cost <- buildable_sqft * rate
   soft_cost <- assumptions$construction$soft_cost_fn(hard_cost, parcel_row)

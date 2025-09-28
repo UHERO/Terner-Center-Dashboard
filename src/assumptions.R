@@ -17,7 +17,7 @@
 #=========================================================
 # Global Variables: 
 #=========================================================
-# change this to select different unit type
+# change this to select different unit type (for rent vs for sale & unit size)
 SELECTED_UNIT_TYPE <- "one_bb" 
 
 #=========================================================
@@ -30,7 +30,7 @@ assumptions <- list(
   # CONSTRUCTION VARIABLES
   construction = list(
     
-    # hard construction cost per zone, need to change
+    # hard construction cost per zone (need to change)
     cost_per_zone = data.frame(
       zone_class  = c("A-1", "A-2", "A-3", "AMX-1", "AMX-2", "AMX-3"),
       cost_per_sf = c(170.50, 161.21, 183.70, 200.00, 266.91, 231.18),
@@ -56,32 +56,63 @@ assumptions <- list(
       # two beds 1 bath
       two_bb = 800,
       # three beds 1.5 bath
-      three_bb = 1100
+      three_bb = 1100, 
+      
+      # for sale sizes 
+      studios = 500,
+      one_bbs = 650, 
+      two_bbs = 800,
+      three_bbs = 1100
     ), 
     
     # market price for regular units per month (for rent)
+    # uses 100% AMI, 30% of income
     mkt_unit = list (
       # studio 1 bath
-      studio_mkt = 1509,
+      studio_mkt = 2437,
       # 1 bed 1 bath
-      one_bb_mkt = 1711, 
+      one_bb_mkt = 2611, 
       # two beds 1 bath
-      two_bb_mkt = 2201,
+      two_bb_mkt = 3132,
       # three beds 1.5 bath
-      three_bb_mkt = 3731
+      three_bb_mkt = 3614
     ), 
     
     # affordable unit price per month (for rent) (change later) 
+    # uses 80% AMI, 30% of income
     afd_unit = list(
       # studio 1 bath
-      studio_afd = 1200,
+      studio_afd = 1950,
       # 1 bed 1 bath
-      one_bb_afd = 1300, 
+      one_bb_afd = 2089, 
       # two beds 1 bath
-      two_bb_afd = 1700,
+      two_bb_afd = 2506,
       # three beds 1.5 bath
-      three_bb_afd = 3100
-    )
+      three_bb_afd = 3132
+    ), 
+    
+    # market unit price per month (for sale)
+    mkt_sale_unit = list(
+      # studio 1 bath
+      studios_mkt = 300000,
+      # 1 bed 1 bath
+      one_bbs_mkt = 400000, 
+      # two beds 1 bath
+      two_bbs_mkt = 600000,
+      # three beds 1.5 bath
+      three_bbs_mkt = 800000
+    ), 
+    
+    # affordable unit price per month (for rent)  
+    afd_sale_unit = list(
+      # studio 1 bath
+      studios_afd = 180000,
+      # 1 bed 1 bath
+      one_bbs_afd = 250000, 
+      # two beds 1 bath
+      two_bbs_afd = 360000,
+      # three beds 1.5 bath
+      three_bbs_afd = 700000
   ),
   
   # FAR / DENSITY PARAMETERS
