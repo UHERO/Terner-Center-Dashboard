@@ -34,5 +34,7 @@ Housing.Rproj
 - Features: branches in develop for specific tasks 
 
 ## Data 
-- TOD_Interim_Boundary: The TOD plan boundary shp files for the TOD zones not implemented currently
+- TOD_Interim_Boundary: TOD plan boundary shp files for the proposed TOD zones not implemented currently (ex. Kalihi, Ala moana)
 - ASMTGIS_Table: BFS Real Property Assesment Table for all islands
+- All_Zoning: All zoning codes for Oahu (ex. includes B1-3, BMX1-3), for later impementation if we want to include other residential/apartment units into the pro forma
+- Special_Districts_Zoning: Special district zones for zoning (ex. Waikiki Special District) (Also includes already implemented TOD zones (ex. Waipahu), however is not an accurate shape as the final decisions TOD zones)
