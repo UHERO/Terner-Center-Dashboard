@@ -31,4 +31,8 @@ Housing.Rproj
 ## Usage 
 - Main branch: fully working/developed code
 - Develop: different workspace for code still in progress
-- Features: branches in develop for specific tasks
+- Features: branches in develop for specific tasks 
+
+## Data 
+- TOD_Interim_Boundary: The TOD plan boundary shp files for the TOD zones not implemented currently
+- ASMTGIS_Table: BFS Real Property Assesment Table for all islands
