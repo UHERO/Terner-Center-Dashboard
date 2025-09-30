@@ -35,7 +35,7 @@ Housing.Rproj
 
 ## Data 
 - TOD_Interim_Boundary: TOD plan boundary shp files for the proposed TOD zones not implemented currently (ex. Kalihi, Ala moana)
-- TOD_Adopted_Boundary: Already adopted TOD zones (ex. Aloha Stadium, Waipahu)  shp files (includes: height & zone changes) 
-- ASMTGIS_Table: BFS Real Property Assesment Table for all islands
+- [TOD_Adopted_Boundary](https://honolulu-cchnl.opendata.arcgis.com/datasets/cchnl::tod-special-district-and-zone-change/explore?layer=3&location=21.359764%2C-157.982790%2C12.99): Already adopted TOD zones (ex. Aloha Stadium, Waipahu)  shp files (includes: height & zone changes) 
+- [ASMTGIS_Table](https://honolulu-cchnl.opendata.arcgis.com/datasets/11a667cc8ab0434c9c40c8566dc0d375_9/explore?filters=eyJ0bWsiOlsiOTQxMTUwMzgiXX0%3D): BFS Real Property Assesment Table for all islands
 - All_Zoning: All zoning codes for Oahu (ex. includes B1-3, BMX1-3), for later impementation if we want to include other residential/apartment units into the pro forma
-- Special_Districts_Zoning: Special district zones for zoning (ex. Waikiki Special District) (Also includes already implemented TOD zones (ex. Waipahu), however is not an accurate shape compared to TOD_Adopted_Boundary)
+- [Special_Districts_Zoning](https://honolulu-cchnl.opendata.arcgis.com/datasets/6e1bbf5e381847ad93fd76dbeecfdd50_1/explore?filters=eyJzcGVjaWFsX2Rpc3RyaWN0IjpbIldhaWtpa2kgU3BlY2lhbCBEaXN0cmljdCBhbmQgRGlhbW9uZCBIZWFkIFNwZWNpYWwgRGlzdHJpY3QiLCJXYWlraWtpIFNwZWNpYWwgRGlzdHJpY3QiLCJQdW5jaGJvd2wgU3BlY2lhbCBEaXN0cmljdCIsIktpbmcgS2FtZWhhbWVoYSBJSUkgYXQgVGhvbWFzIFNxdWFyZS9Ib25vbHVsdSBNdXNldW0gb2YgQXJ0IFNwZWNpYWwgRGlzdHJpY3QiLCJLYWthYWtvIFNwZWNpYWwgRGVzaWduIERpc3RyaWN0IiwiSGFsZWl3YSBTcGVjaWFsIERpc3RyaWN0IiwiRGlhbW9uZCBIZWFkIFNwZWNpYWwgRGlzdHJpY3QiLCJDaGluYXRvd24gU3BlY2lhbCBEaXN0cmljdCIsIkhhd2FpaSBDYXBpdGFsIFNwZWNpYWwgRGlzdHJpY3QiLCJUcmFuc2l0LU9yaWVudGVkIERldmVsb3BtZW50IFNwZWNpYWwgRGlzdHJpY3QiXX0%3D&location=21.288384%2C-157.836843%2C13.57): Special district zones for zoning (ex. Waikiki Special District) (Also includes already implemented TOD zones (ex. Waipahu), however is not an accurate shape compared to TOD_Adopted_Boundary)
