@@ -24,6 +24,7 @@ Housing.Rproj
 - [Pro Forma Variables Spreadsheet](https://docs.google.com/spreadsheets/d/1_sSlavakP_3b8Ssv547RV-63rOuHqrqrIfim9JED3XU/edit?usp=sharing)  
 - [Honolulu Inclusionary Housing Flowchart](https://miro.com/app/board/uXjVJaPZAJQ=/)
 - [IPDT Flowchart](https://miro.com/app/live-embed/uXjVJDi57jk=/?embedMode=view_only_without_ui&moveToViewport=-2298%2C-1870%2C3822%2C2086&embedId=247174178665)
+- [Parcels & Zoning Dashboard](https://www.honolulugis.org/apps/cchnl::parcels-zoning-information-app-/explore?path=)
 
 ## Notes 
 - Filepathing is unique to Sakura, change when needed 
