@@ -106,13 +106,72 @@ height_tod <- height_tod %>%
   height = as.numeric(height)
   )
 
+# create columns or rbind gets mad
+height_tod <- height_tod %>%
+  mutate(
+    TOD_proposed = 0,
+    TOD_adopt = 1
+  )
 # Create new df called parcels, drop geometry and remove tmk column
 oahu_parzon <- oahu_parzon %>%
-  st_drop_geometry() %>%
   mutate(TOD_proposed = TOD_proposed,
-         TOD_adopt = TOD_adopt) 
+         TOD_adopt = TOD_adopt,
+         height = NA_real_) 
 
-# JOIN OAHU PARZON & HEIGHT_TOD
+# joins parzon & TOD heights
+parcels <- oahu_parzon %>%
+  full_join(
+    height_tod %>% st_drop_geometry(),  
+    by = "tmk",
+    suffix = c("_parzon", "_tod")
+  ) %>%
+  mutate(
+    # if height exists in height_tod, use it
+    height = coalesce(height_tod, height_parzon),
+    zone_class = coalesce(zone_class_tod, zone_class_parzon),
+    lot_sqft   = coalesce(lot_sqft_tod, lot_sqft_parzon),
+    TOD_proposed = coalesce(TOD_proposed_parzon, TOD_proposed),
+    TOD_adopt    = coalesce(TOD_adopt_parzon, TOD_adopt)
+  ) %>%
+  select(tmk, lot_sqft, zone_class, height, TOD_proposed, TOD_adopt, geometry)
+
+#=========================================================
+# Creates zoning height limits column (need to change)
+#=========================================================
+# libraries
+library(sf)
+library(dplyr)
+library(tidyr)
+library(stringr) 
+
+# load in height limit
+height <- st_read("C:/Users/1saku/Desktop/Housing/data/raw/Zoning_Height/Zoning_Map_Height_Limit.shp")
+height <- st_make_valid(height) 
+
+height_df <- height %>%
+  filter(height_l_1 != "Transit-Oriented Development") %>%
+  select(height = height_lab , source = height_l_1, geometry) %>%
+  mutate(height = if_else(
+    str_detect(height, "\\("),
+    str_extract(height, "(?<=\\()\\d+"),  
+    str_extract(height, "\\d+")           
+  ),
+  height = as.numeric(height)
+  ) %>%
+  st_transform(st_crs(parcels))
+
+# only if merged polygon is fully inside height_df polygon
+parcels <- parcels %>%
+  st_join(
+    height_df %>% select(height, source),
+    join = st_within,   
+    left = TRUE         
+  ) %>%
+  mutate(
+    # if height from height_df exists, overwrite the existing height
+    height = coalesce(height.y, height.x)
+  ) %>%
+  select(-height.x, -height.y, -source)  
 
 #=========================================================
 # Cleans BFS data for average land value
@@ -142,16 +201,4 @@ landvalue_df <- landvalue_df %>%
 # join landvalue & parcels
 parcels <- parcels %>%
   left_join(landvalue_df, by = "tmk")
-
-#=========================================================
-# Creates zoning height limits column (need to change)
-#=========================================================
-
-# load in height limit
-height <- st.read("C:/Users/1saku/Desktop/Housing/data/raw/Zoning_Height/Zoning_Map_Height_Limit.shp")
-
-height_df <- height %>%
-  filter(HEIGHT_LABEL_SOURCE == "Transit-Oriented Development") %>%
-  select(height = HEIGHT_LABEL, source = HEIGHT_LABEL_SOURCE)
-
 
