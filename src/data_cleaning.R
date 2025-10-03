@@ -173,6 +173,18 @@ parcels <- parcels %>%
   ) %>%
   select(-height.x, -height.y, -source)  
 
+# if height is NA and zone_class is A-1 or AMX-1 have the height column be 30 for parcels 
+# A-2, A-3, AMX-2, AMX-3, is filled by the average number (change?)
+parcels <- parcels %>%
+  mutate(
+    height = case_when(
+      is.na(height) & zone_class %in% c("A-1", "AMX-1") ~ 30,
+      is.na(height) & zone_class %in% c("A-2", "AMX-2") ~ 60,
+      is.na(height) & zone_class == "AMX-3" ~ 250,
+      is.na(height) & zone_class == "A-3" ~ 100,
+      TRUE                                            ~ height
+    )
+  )
 #=========================================================
 # Cleans BFS data for average land value
 #
@@ -200,5 +212,7 @@ landvalue_df <- landvalue_df %>%
 
 # join landvalue & parcels
 parcels <- parcels %>%
-  left_join(landvalue_df, by = "tmk")
+  left_join(landvalue_df, by = "tmk") %>%
+  st_drop_geometry()
+  
 
