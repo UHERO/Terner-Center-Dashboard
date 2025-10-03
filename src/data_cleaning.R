@@ -10,6 +10,7 @@
 library(sf)
 library(dplyr)
 library(tidyr)
+library(stringr)
 
 #=========================================================
 # Creates zoning & tax parcels for Oahu
@@ -59,7 +60,7 @@ oahu_parzon <- oahu_with_zones %>%
   )
 
 #=========================================================
-# Creates different columns for adopted & proposed TOD zones in parcels df
+# Creates different columns for adopted & proposed TOD zones in parcels df with height
 #=========================================================
 
 # loads in proposed TOD boundary zones 
@@ -76,13 +77,42 @@ tod_adopt <- st_transform(tod_adopt, st_crs(oahu_parzon))
 # creates TOD_adopt column (0=no, 1=yes)
 TOD_adopt <- as.numeric(lengths(st_intersects(oahu_parzon, tod_adopt)) > 0)
 
+# create a df with the adopted data to filter out the A/AMX values
 parcels_with_adopt <- st_join(oahu_parzon, tod_adopt, join = st_intersects)
 
+target_zones <- c("A-1", "A-2", "A-3", "AMX-1", "AMX-2", "AMX-3")
+
+parcels_with_adopt <- parcels_with_adopt %>%
+  filter(to_zoning %in% target_zones)
+
+# tmk shp files is weird, filter out the decimal columns 
+filtered_parceled <- parcels_with_adopt[!grepl("\\.", rownames(parcels_with_adopt)), ]
+
+# filter out the df
+height_tod <- filtered_parceled %>%
+  select(tmk, lot_sqft, to_zoning, to_map_hei) %>%
+  rename(
+    zone_class = to_zoning,
+    height = to_map_hei
+  )
+
+# makes extracts height & makes it a numeric value 
+height_tod <- height_tod %>%
+  mutate(height = if_else(
+    str_detect(height, "\\("),
+    str_extract(height, "(?<=\\()\\d+"),  
+    str_extract(height, "\\d+")           
+  ),
+  height = as.numeric(height)
+  )
+
 # Create new df called parcels, drop geometry and remove tmk column
-parcels <- oahu_parzon %>%
+oahu_parzon <- oahu_parzon %>%
   st_drop_geometry() %>%
   mutate(TOD_proposed = TOD_proposed,
-         TOD_adopt = TOD_adopt)
+         TOD_adopt = TOD_adopt) 
+
+# JOIN OAHU PARZON & HEIGHT_TOD
 
 #=========================================================
 # Cleans BFS data for average land value
@@ -113,5 +143,15 @@ landvalue_df <- landvalue_df %>%
 parcels <- parcels %>%
   left_join(landvalue_df, by = "tmk")
 
+#=========================================================
+# Creates zoning height limits column (need to change)
+#=========================================================
+
+# load in height limit
+height <- st.read("C:/Users/1saku/Desktop/Housing/data/raw/Zoning_Height/Zoning_Map_Height_Limit.shp")
+
+height_df <- height %>%
+  filter(HEIGHT_LABEL_SOURCE == "Transit-Oriented Development") %>%
+  select(height = HEIGHT_LABEL, source = HEIGHT_LABEL_SOURCE)
 
 
