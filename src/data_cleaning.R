@@ -138,11 +138,6 @@ parcels <- oahu_parzon %>%
 #=========================================================
 # Creates zoning height limits column (need to change)
 #=========================================================
-# libraries
-library(sf)
-library(dplyr)
-library(tidyr)
-library(stringr) 
 
 # load in height limit
 height <- st_read("C:/Users/1saku/Desktop/Housing/data/raw/Zoning_Height/Zoning_Map_Height_Limit.shp")
@@ -174,7 +169,7 @@ parcels <- parcels %>%
   select(-height.x, -height.y, -source)  
 
 # if height is NA and zone_class is A-1 or AMX-1 have the height column be 30 for parcels 
-# A-2, A-3, AMX-2, AMX-3, is filled by the average number (change?)
+# A-2, A-3, AMX-2, AMX-3, is filled by the mode number (change?)
 parcels <- parcels %>%
   mutate(
     height = case_when(
@@ -182,7 +177,7 @@ parcels <- parcels %>%
       is.na(height) & zone_class %in% c("A-2", "AMX-2") ~ 60,
       is.na(height) & zone_class == "AMX-3" ~ 250,
       is.na(height) & zone_class == "A-3" ~ 100,
-      TRUE                                            ~ height
+      TRUE ~ height
     )
   )
 #=========================================================
@@ -199,20 +194,20 @@ parcels <- parcels %>%
 bfs_df <- read.csv("C:/Users/1saku/Desktop/Housing/data/raw/ASMTGIS_Table.csv")
 
 landvalue_df <- bfs_df %>%
-  group_by(tmk) %>%
-  # if row has suffix == "0000", keep only that; otherwise keep the first row
-  filter(if (any(suffix == "0000")) suffix == "0000" else row_number() == 1) %>%
-  ungroup() %>%
-  # keep only tmk and landvalue
-  select(tmk, landvalue)
-
-# it thinks tmk is an integer
-landvalue_df <- landvalue_df %>%
+  filter(substr(parid, 9, 12) == "0000") %>%
+  select(tmk, landvalue) %>%
   mutate(tmk = as.character(tmk))
 
 # join landvalue & parcels
 parcels <- parcels %>%
   left_join(landvalue_df, by = "tmk") %>%
   st_drop_geometry()
-  
+
+#=========================================================
+# Filter out the edge cases 
+#=========================================================
+# if it's less than 2000 sqft and less than $1000 remove it
+# make a spreadsheet for all the parcels 
+# print out where the zoning height limits is empty 
+# how should i filter??? some are parking and some are 
 
