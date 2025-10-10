@@ -84,6 +84,11 @@ calc_soft_costs <- function(hard_cost, parcel_row, num_units = NULL) {
     fees$administrative$third_party_cert_initial
   total_soft_cost <- total_soft_cost + admin_fees
   
+  # park dedication fee
+  # need to add how much you pay if you say no to park dedication
+  park_fee <- fees$park_dedication()
+  total_soft_cost <- total_soft_cost + park_fee
+  
   # impact fees (edit when found)
   if (!is.null(num_units) && !is.na(fees$impact$per_unit)) {
     impact_fees <- num_units * fees$impact$per_unit
@@ -113,7 +118,7 @@ calc_construction_costs <- function(zone_class, lot_sqft, parcel_row, constructi
   }
   
   # buildable sqft
-  # (add in height function later on)
+  # need to implement: height, setback, park dedication
   far <- calc_far(
     zone_class = zone_class, 
     lot_sqft = lot_sqft, 

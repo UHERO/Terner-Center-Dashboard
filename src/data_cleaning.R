@@ -111,11 +111,27 @@ height_tod <- height_tod %>%
   mutate(
     TOD_proposed = 0,
     TOD_adopt = 1
-  )
-# Create new df called parcels, drop geometry and remove tmk column
+  ) 
+
+#=========================================================
+# Creates special districts column
+#=========================================================
+
+# loads in special districts 
+special <- st_read("C:/Users/1saku/Desktop/Housing/data/raw/Special_Districts_Zoning/Zoning_Special_District.shp")
+# change CRS to match
+special <- st_transform(special, st_crs(oahu_parzon)) 
+# creates special districts column (0=no, 1=yes)
+Special_district <- as.numeric(lengths(st_intersects(oahu_parzon, special)) > 0)
+
+# create a df with the special districts
+oahu_parzon <- st_join(oahu_parzon, special, join = st_intersects)
+
+# create new df called parcels, drop geometry and remove tmk column
 oahu_parzon <- oahu_parzon %>%
   mutate(TOD_proposed = TOD_proposed,
          TOD_adopt = TOD_adopt,
+         Special_zone = Special_district,
          height = NA_real_) 
 
 # joins parzon & TOD heights
@@ -133,53 +149,96 @@ parcels <- oahu_parzon %>%
     TOD_proposed = coalesce(TOD_proposed_parzon, TOD_proposed),
     TOD_adopt    = coalesce(TOD_adopt_parzon, TOD_adopt)
   ) %>%
-  select(tmk, lot_sqft, zone_class, height, TOD_proposed, TOD_adopt, geometry)
+  select(tmk, lot_sqft, zone_class, height, TOD_proposed, TOD_adopt, Special_zone, geometry)
 
 #=========================================================
-# Creates zoning height limits column (need to change)
+# Creates zoning height limits column
+# uses geojson with manual fixes for missing attributes
 #=========================================================
 
-# load in height limit
-height <- st_read("C:/Users/1saku/Desktop/Housing/data/raw/Zoning_Height/Zoning_Map_Height_Limit.shp")
+# load in height limit from geojson
+height <- st_read("C:/Users/1saku/Desktop/Housing/data/raw/height_zones.geojson")
 height <- st_make_valid(height) 
 
+# manually fill in missing height_label and height_label_source values
+# these records have geometry but missing metadata
+missing_data <- data.frame(
+  objectid = c(23, 25, 28, 69, 89, 144, 145, 398, 399, 412, 440, 441, 442, 443, 445, 446, 448, 449, 450, 527, 529),
+  height_label = c("40'", "60'", "220'", "150'", "250'", "40'", "40'", "350'", "60' (250')", "0'", 
+                   "0'", "30'", "150'", "0'", "150'", "150'", "25'", "40'", "220'", "350'", "25'"),
+  height_label_source = c("Zoning Map", "Zoning Map", "Waikiki Special District", "Zoning Map", "Zoning Map",
+                          "Zoning Map", "Zoning Map", "Hawaii Capital Special District", 
+                          "Transit-Oriented Development Special District", "Punchbowl Special District",
+                          "Thomas Square Special District", "Punchbowl Special District", "Zoning Map",
+                          "Punchbowl Special District", "Thomas Square Special District", "Thomas Square Special District",
+                          "Thomas Square Special District", "Punchbowl Special District", 
+                          "Diamond Head / Waikiki Special Districts", "Waikiki Special District", 
+                          "Diamond Head Special District"),
+  stringsAsFactors = FALSE
+)
+
+# fill in the missing values
+for (i in 1:nrow(missing_data)) {
+  oid <- missing_data$objectid[i]
+  if (oid %in% height$objectid) {
+    height$height_label[height$objectid == oid] <- missing_data$height_label[i]
+    height$height_label_source[height$objectid == oid] <- missing_data$height_label_source[i]
+  }
+}
+
 height_df <- height %>%
-  filter(height_l_1 != "Transit-Oriented Development") %>%
-  select(height = height_lab , source = height_l_1, geometry) %>%
-  mutate(height = if_else(
+  select(height = height_label, source = height_label_source, geometry) %>%
+  mutate(height_clean = if_else(
     str_detect(height, "\\("),
     str_extract(height, "(?<=\\()\\d+"),  
     str_extract(height, "\\d+")           
   ),
-  height = as.numeric(height)
+  height_clean = as.numeric(height_clean)
   ) %>%
   st_transform(st_crs(parcels))
 
-# only if merged polygon is fully inside height_df polygon
-parcels <- parcels %>%
-  st_join(
-    height_df %>% select(height, source),
-    join = st_within,   
-    left = TRUE         
-  ) %>%
-  mutate(
-    # if height from height_df exists, overwrite the existing height
-    height = coalesce(height.y, height.x)
-  ) %>%
-  select(-height.x, -height.y, -source)  
+# only assign heights to parcels that don't already have them (preserves tod heights)
+parcels_need_height <- parcels %>%
+  filter(is.na(height))
 
-# if height is NA and zone_class is A-1 or AMX-1 have the height column be 30 for parcels 
-# A-2, A-3, AMX-2, AMX-3, is filled by the mode number (change?)
+# get centroids of parcels that need heights
+parcel_centroids <- st_centroid(parcels_need_height)
+
+# for each centroid, find the nearest height zone
+nearest_indices <- st_nearest_feature(parcel_centroids, height_df)
+
+# get the heights from nearest zones
+nearest_heights <- height_df$height_clean[nearest_indices]
+
+# create lookup dataframe 
+height_assignments <- data.frame(
+  tmk = parcels_need_height$tmk,
+  height_zone = nearest_heights,
+  stringsAsFactors = FALSE
+)
+
+# join back to parcels
 parcels <- parcels %>%
+  left_join(height_assignments, by = "tmk") %>%
   mutate(
-    height = case_when(
-      is.na(height) & zone_class %in% c("A-1", "AMX-1") ~ 30,
-      is.na(height) & zone_class %in% c("A-2", "AMX-2") ~ 60,
-      is.na(height) & zone_class == "AMX-3" ~ 250,
-      is.na(height) & zone_class == "A-3" ~ 100,
-      TRUE ~ height
-    )
-  )
+    # only fill in if height is na (preserves existing tod heights)
+    height = coalesce(height, height_zone)
+  ) %>%
+  select(-height_zone)
+  
+# # if height is NA and zone_class is A-1 or AMX-1 have the height column be 30 for parcels
+# # A-2, A-3, AMX-2, AMX-3, is filled by the mode number (change?)
+# parcels <- parcels %>%
+#   mutate(
+#     height = case_when(
+#       is.na(height) & zone_class %in% c("A-1", "AMX-1") ~ 30,
+#       is.na(height) & zone_class %in% c("A-2", "AMX-2") ~ 60,
+#       is.na(height) & zone_class == "AMX-3" ~ 250,
+#       is.na(height) & zone_class == "A-3" ~ 100,
+#       TRUE ~ height
+#     )
+#   )
+  
 #=========================================================
 # Cleans BFS data for average land value
 #
@@ -204,10 +263,13 @@ parcels <- parcels %>%
   st_drop_geometry()
 
 #=========================================================
-# Filter out the edge cases 
+# Adds in roads 
+#
+# NOTES: 
+# use later for setback in buildable sqft 
+# perhaps use to filter out private roads & parking lots
 #=========================================================
-# if it's less than 2000 sqft and less than $1000 remove it
-# make a spreadsheet for all the parcels 
-# print out where the zoning height limits is empty 
-# how should i filter??? some are parking and some are 
+
+# read in roads geojson
+roads_df <- read.csv("C:/Users/1saku/Desktop/Housing/data/raw/roads.geojson")
 

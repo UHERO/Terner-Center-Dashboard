@@ -16,6 +16,12 @@
 # change this to select different unit type (for rent vs for sale & unit size)
 SELECTED_UNIT_TYPE <- "one_bb" 
 
+# change this to select park dedication
+SELECTED_PARK <- "no_park" 
+
+# change this to selected floor height
+SELECTED_HEIGHT <- 10 
+
 #=========================================================
 # CONSTRUCTION VARIABLES
 #=========================================================
@@ -250,12 +256,20 @@ fees = list(
     third_party_cert_renewal = 1000
   ),
   
+  # PARK DEDICATION FEES
+  park_dedication = function() {
+    park_fees <- list(
+      yes_park = 300, 
+      no_park = 200    
+    )
+    return(park_fees[[SELECTED_PARK]])
+  },
+  
   # IMPACT FEES (edit)
   impact = list(
     per_unit = NA,
     per_sqft = NA,
     school_fee = NA,
-    park_fee = NA,
     transportation_fee = NA
   ),
   
@@ -342,16 +356,30 @@ entitlement = list(
 )
 
 #=========================================================
-# PARKING VARIABLES (need to change)
+# PARKING VARIABLES
 #=========================================================
 parking = list(
-  # parking fee per parking space per month
+  # parking fee per parking space per month (for rental income, need to change)
   park_rate = 100,  
-  # average parking spaces per unit
-  spaces_per_unit = 1  
-)
   
+  # 1 space per 1,000 sqft of private dwelling area
+  calc_required_spaces = function(buildable_sqft) {
+    
+    # adjust gross floor area by subtracting except areas (A-D)
+    required_spaces <- buildable_sqft / 1000
+    
+    # round up if >= 0.5
+    required_spaces <- ifelse(required_spaces %% 1 >= 0.5, 
+                              ceiling(required_spaces), 
+                              floor(required_spaces))
+    
+    return(required_spaces)
+  }
+)
+
+#=========================================================  
 # OTHER INCOME (need to change)
+#=========================================================
 income = list(
   # application fees, lease renewal fees, etc.
   apt_admin = list(
