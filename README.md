@@ -21,7 +21,8 @@ Housing.Rproj
 ## Resources
 - Path to RData on the NAS: `Z:\work\research\housing\zoning\cch-zoning\RData`
 - [UHERO Google Drive Folder](https://drive.google.com/drive/folders/1hgTBZ4-xmxrQN5XRX8QaS8DMSH_GULah?usp=sharing)
-- [Pro Forma Variables Spreadsheet](https://docs.google.com/spreadsheets/d/1_sSlavakP_3b8Ssv547RV-63rOuHqrqrIfim9JED3XU/edit?usp=sharing)  
+- [Pro Forma Variables Spreadsheet](https://docs.google.com/spreadsheets/d/1_sSlavakP_3b8Ssv547RV-63rOuHqrqrIfim9JED3XU/edit?usp=sharing)
+- [Assumptions Made Tracker](https://docs.google.com/spreadsheets/d/1QqSswndNPDVZwGPuKo3mlO7poFdPswB8rq8TlTXpmyo/edit?gid=0#gid=0)
 - [Honolulu Inclusionary Housing Flowchart](https://miro.com/app/board/uXjVJaPZAJQ=/)
 - [IPDT Flowchart](https://miro.com/app/live-embed/uXjVJDi57jk=/?embedMode=view_only_without_ui&moveToViewport=-2298%2C-1870%2C3822%2C2086&embedId=247174178665)
 - [Parcels & Zoning Dashboard](https://www.honolulugis.org/apps/cchnl::parcels-zoning-information-app-/explore?path=)
