@@ -1,141 +1,284 @@
 #=========================================================
-# Project Costs R Script:
+# Project Costs R Script 
 #
-# The pathways are specific to my local drive so feel free to change them to run it.
-# Calculates the total project costs: land, hard, soft
-# Also calculates max & affordable units for TOD & non-TOD parcels
+# Calculates total project costs (land, hard, soft)
+# and max/affordable units for TOD, Special District, and Regular parcels.
 # @author: Sakura
-# @date: 9/26/25
+# @date: 10/17/25
 #=========================================================
 
-# libraries
-library(sf)
+#=========================================================
+# Global Variables
+#=========================================================
+# either "for_sale" or "for_rent"
+SELECTED_SALE_TYPE <- "for_rent" 
+
+SELECTED_TOD_AFD <- "tod_15"
+SELECTED_OTHER_AFD <- "other_15"
+
+project_type <- list(
+  other_15 = 0.15, 
+  other_20 = 0.2,
+  tod_30 = 0.3, 
+  tod_35 = 0.35  
+)
+
+#=========================================================
+# libraries and sources
 library(dplyr)
 library(tidyr)
 
-# load cost functions from assumption parameters
-source("C:/Users/1saku/Desktop/Housing/src/Assumptions.R")
-
-# loads RData parzon data
-# this gives you 'parzon': parcels & zoning classes from Emi's work
-load(file = "C:/Users/1saku/Desktop/Housing/RData") 
-
-# loads in TOD boundary zones 
-tod_sf <- st_read("C:/Users/1saku/Desktop/Housing/data/TOD_Boundary/TOD_Plan_Boundary.shp")
-
-# change CRS of tod_sf to match parzon
-tod_sf <- st_transform(tod_sf, st_crs(parzon))
-
-# creates TOD column (0=no, 1=yes)
-parzon$TOD <- as.numeric(lengths(st_intersects(parzon, tod_sf)) > 0)
-
-# parzon is a sf object, drop geometry column, maybe attach it later
-parzon_df <- st_drop_geometry(parzon) 
-
-# function to get FAR with TOD bonus
-# applying all TOD zones with (max FAR w/ minor special district permit (21.9 100-8))
-calc_far <- function(zone, lot_sqft, tod_status, assumptions) {
+# load cleaned data & cost functions
+source("C:/Users/1saku/Desktop/Housing/src/assumptions.R")
+source("C:/Users/1saku/Desktop/Housing/src/data_cleaning.R")
+#=========================================================
+# function to get FAR with bonuses
+calc_far <- function(zone_class, lot_sqft, parcel_row, density) {
   base_far <- NA
-  if(zone %in% c("A-1","AMX-1")) base_far <- assumptions$density$FAR_table$A1_AMX1(lot_sqft)
-  if(zone %in% c("A-2","AMX-2")) base_far <- assumptions$density$FAR_table$A2_AMX2(lot_sqft)
-  if(zone %in% c("A-3","AMX-3")) base_far <- assumptions$density$FAR_table$A3_AMX3(lot_sqft)
   
-  if(is.na(base_far)) {
-    warning(paste("Unknown zone:", zone))
+  if (zone_class %in% c("A-1", "AMX-1")) base_far <- density$FAR_table$A1_AMX1(lot_sqft)
+  if (zone_class %in% c("A-2", "AMX-2")) base_far <- density$FAR_table$A2_AMX2(lot_sqft)
+  if (zone_class %in% c("A-3", "AMX-3")) base_far <- density$FAR_table$A3_AMX3(lot_sqft)
+  
+  if (is.na(base_far)) {
+    warning(paste("Unknown zone:", zone_class))
     return(NA)
   }
-  
-  # Apply TOD bonus if parcel is in TOD area
-  if(tod_status == 1) {
+  # TOD bonus
+  if (parcel_row$TOD_adopt == 1 | parcel_row$TOD_proposed == 1) {
+    base_far <- base_far * 2
+  }
+  # special district bonus
+  if (parcel_row$Special_zone == 1) {
     base_far <- base_far * 1.2
   }
-  
   return(base_far)
 }
 
-# function to calculate construction costs per parcel
-calc_construction_costs <- function(zone, lot_sqft, parcel_row, assumptions) {
-  # hard cost rate
-  rate <- assumptions$construction$cost_per_zone$cost_per_sf[
-    assumptions$construction$cost_per_zone$zone_class == zone
+#=========================================================
+# Development Cost Subfunctions
+#=========================================================
+# TOD PARCELS
+calc_TOD_costs <- function(zone_class, lot_sqft, parcel_row, construction, density) {
+  far <- calc_far(zone_class, lot_sqft, parcel_row, density)
+  buildable_sqft <- lot_sqft * far
+  # building construction cost rate
+  rate <- construction$cost_per_zone$cost_per_sf[
+    construction$cost_per_zone$zone_class == zone_class
   ]
   
-  if(length(rate) == 0) {
-    warning(paste("Unknown zone:", zone))
-    return(c(FAR=NA, buildable_sqft=NA, max_units=NA,
-             hard_cost=NA, soft_cost=NA, total_construct_cost=NA))
-  }
-  
-  # NEED TO ADD: 
-  # how parking plays a role into total buildable sqft for apartment units
   # buildable sqft
-  far <- calc_far(zone, lot_sqft, parcel_row$TOD, assumptions)
-  buildable_sqft <- lot_sqft * far
+  # need to implement: height, setback, park dedication, parking
+  max_units <- floor(buildable_sqft / current_unit$size_sqft)
   
-  # max units
-  max_units <- floor(buildable_sqft / assumptions$current_unit$size_sqft)
-  
-  # need to implement inclusionary housing (ie. Transit Project Rates)
-  # inclusionary housing placeholder, perhaps create a function in assumptions?
-  # for now using the for rent affordable unit share rate
-  if(parcel_row$TOD == 1) {
-    affordable_units <- round(max_units * 0.15)  # 15% for TOD areas
-  } else {
-    affordable_units <- round(max_units * 0.05)  # 5% for non-TOD areas
+  # affordable/inclusionary housing for TOD
+  if (SELECTED_SALE_TYPE == "for_rent") {
+    affordable_units <- round(max_units * 0.15)
+  } else if (SELECTED_SALE_TYPE == "for_sale") {
+    affordable_units <- round(max_units * project_type[[SELECTED_TOD_AFD]])
   }
   
-  # construction costs
-  hard_cost <- buildable_sqft * rate
-  soft_cost <- assumptions$construction$soft_cost_fn(hard_cost, parcel_row)
-  total_construct_cost <- hard_cost + soft_cost
+  # parking costs for TOD (make it structured)
+  parking_summary <- parking$calc_parking_cost(buildable_sqft, "structured")
+  parking_cost <- parking_summary$total_cost
   
-  return(c(
+  # hard & soft calculation
+  hard_cost <- (buildable_sqft * rate) + parking_cost
+  soft_cost <- calc_soft_costs(hard_cost, parcel_row, max_units, affordable_units)
+  construct_cost <- hard_cost + soft_cost
+  
+  return(data.frame(
+    tmk = parcel_row$tmk,
     buildable_sqft = buildable_sqft,
     max_units = max_units,
     affordable_units = affordable_units,
     hard_cost = hard_cost,
+    parking_cost = parking_cost,
     soft_cost = soft_cost,
-    total_construct_cost = total_construct_cost
+    construct_cost = construct_cost
   ))
 }
 
-# new df with hard + soft + total costs, & affordable + max units
-construction_costs_df <- parzon_df %>%
-  rowwise() %>%
-  mutate(costs = list(calc_construction_costs(zone_class, lot_sqft, cur_data(), assumptions))) %>%
-  ungroup() %>%
-  unnest_wider(costs) 
+# SPECIAL DISTRICTS PARCELS
+calc_special_district_costs <- function(zone_class, lot_sqft, parcel_row, construction, density) {
+  far <- calc_far(zone_class, lot_sqft, parcel_row, density)
+  buildable_sqft <- lot_sqft * far
+  # building construction cost rate
+  rate <- construction$cost_per_zone$cost_per_sf[
+    construction$cost_per_zone$zone_class == zone_class
+  ]
+  
+  # buildable sqft
+  # need to implement: height, setback, park dedication, parking
+  max_units <- floor(buildable_sqft / current_unit$size_sqft)
+  
+  # affordable/inclusionary housing for special districts 
+  if (SELECTED_SALE_TYPE == "for_rent") {
+    affordable_units <- round(max_units * 0.05)
+  } else if (SELECTED_SALE_TYPE == "for_sale") {
+    affordable_units <- round(max_units * project_type[[SELECTED_OTHER_AFD]])
+  }
+  
+  # parking costs for special districts (make it surface)
+  parking_summary <- parking$calc_parking_cost(buildable_sqft, "surface")
+  parking_cost <- parking_summary$total_cost
+  
+  # hard & soft calculation
+  hard_cost <- (buildable_sqft * rate) + parking_cost
+  soft_cost <- calc_soft_costs(hard_cost, parcel_row, max_units, affordable_units)
+  construct_cost <- hard_cost + soft_cost
+  
+  return(data.frame(
+    tmk = parcel_row$tmk,
+    buildable_sqft = buildable_sqft,
+    max_units = max_units,
+    affordable_units = affordable_units,
+    hard_cost = hard_cost,
+    parking_cost = parking_cost,
+    soft_cost = soft_cost,
+    construct_cost = construct_cost
+  ))
+}
+
+# REGULAR PARCELS
+calc_regular_costs <- function(zone_class, lot_sqft, parcel_row, construction, density) {
+  far <- calc_far(zone_class, lot_sqft, parcel_row, density)
+  buildable_sqft <- lot_sqft * far
+  # building construction cost rate
+  rate <- construction$cost_per_zone$cost_per_sf[
+    construction$cost_per_zone$zone_class == zone_class
+  ]
+  
+  # buildable sqft
+  # need to implement: height, setback, park dedication, parking
+  max_units <- floor(buildable_sqft / current_unit$size_sqft)
+  
+  # affordable/inclusionary housing for regular zones
+  if (SELECTED_SALE_TYPE == "for_rent") {
+    affordable_units <- round(max_units * 0.05)
+  } else if (SELECTED_SALE_TYPE == "for_sale") {
+    affordable_units <- round(max_units * project_type[[SELECTED_OTHER_AFD]])
+  }
+  
+  # parking costs for regular zones (make it surface)
+  parking_summary <- parking$calc_parking_cost(buildable_sqft, "surface")
+  parking_cost <- parking_summary$total_cost
+  
+  # hard & soft costs calculation
+  hard_cost <- (buildable_sqft * rate) + parking_cost
+  soft_cost <- calc_soft_costs(hard_cost, parcel_row, max_units, affordable_units)
+  construct_cost <- hard_cost + soft_cost
+  
+  return(data.frame(
+    tmk = parcel_row$tmk,
+    buildable_sqft = buildable_sqft,
+    max_units = max_units,
+    affordable_units = affordable_units,
+    hard_cost = hard_cost,
+    parking_cost = parking_cost,
+    soft_cost = soft_cost,
+    construct_cost = construct_cost
+  ))
+}
 
 #=========================================================
-# Total Development Cost: 
-# This gives land cost estimate
-# For later on in the initial investment in developer's ROR & total dev cost
+# Soft Cost Functions
+# need to add impact fees & civil engineering & IPDT/PDT fee
 #=========================================================
+calc_soft_costs <- function(hard_cost, parcel_row, max_units, affordable_units = 0) {
+  total_soft_cost <- 0
+  
+  # building permit fee & plan review fee
+  per_unit_cost <- hard_cost / max_units
+  permit_fee_per_unit <- fees$building_permit(per_unit_cost)
+  plan_review_fee_per_unit <- fees$plan_review_revision(permit_fee_per_unit)
+  
+  market_units <- max(max_units - affordable_units, 0)
+  
+  # fee logic by zoning
+  if (parcel_row$TOD_adopt == 1 | parcel_row$TOD_proposed == 1) {
+    # TOD: affordable units pay only waiver fee
+    permit_related_fees <- (market_units * (permit_fee_per_unit + plan_review_fee_per_unit)) +
+      (affordable_units * fees$waiver)
+  } else {
+    # special/regular: same, but no IPDT fee
+    permit_related_fees <- (market_units * (permit_fee_per_unit + plan_review_fee_per_unit)) +
+      (affordable_units * fees$waiver)
+  }
+  
+  total_soft_cost <- total_soft_cost + permit_related_fees
+  
+  # administrative fees (flat per parcel)
+  admin_fees <- fees$administrative$temp_occupancy_cert 
+  total_soft_cost <- total_soft_cost + admin_fees
+  
 
-#=========================================================
-# NOTES:
-# the csv is from BFS Real Property Assessment on HIGIS called "ASMTGIS-Table",
-# however the csv is updated weekly so the data may not be accurate.
-# there exists multiple tmk rows in the csv possibly due to multiple assessment units on a parcel,
-# to mitigate this, we take the avg land value of the repeating tmks.
-#========================================================= 
+  # park dedication fee(flat per parcel)
+  # need to add how much you pay if you say no to park dedication
+  park_fee <- fees$park_dedication()
+  total_soft_cost <- total_soft_cost + park_fee
+  
 
-# # load library
-# library(dplyr)
-#
-# # read CSV and clean & aggregate land value
-# land_value_df <- read.csv("C:/Users/1saku/Desktop/Housing/Terner-Center-Dashboard/data/ASMTGIS_Table.csv", stringsAsFactors = FALSE) %>%
-#   select(tmk, landvalue) %>%
-#   rename(
-#     cty_tmk = tmk,
-#     land_value = landvalue
-#   ) %>%
-#   group_by(cty_tmk) %>%
-#   summarise(
-#     avg_land_value = mean(land_value, na.rm = TRUE)
-#   ) %>%
-#   ungroup()
-#
-# # merge two dfs by cty_tmk
-# financial_df <- construction_costs_df %>%
-#   left_join(land_value_df, by = "cty_tmk")
+  # wastewater facility charge (affordable units are waived)
+  wastewater_fee <- 0
+  if (market_units > 0) {
+    wastewater_df <- parcel_row
+    wastewater_df$max_units <- market_units
+    wastewater_fee <- fees$civil$wastewater(wastewater_df)
+  }
+  total_soft_cost <- total_soft_cost + wastewater_fee
+  
+  # civil engineering fees (flat per project)
+  escp_fee <- fees$civil$escp
+  total_soft_cost <- total_soft_cost + escp_fee
+  
+  # environmental review fees (EA + EIS) (flat per project)
+  env_fee <- fees$environment$ea + fees$environment$eis
+  total_soft_cost <- total_soft_cost + env_fee
+  
+  # planned development fee (flat per project)
+  planned_dev_fee <- fees$planned_dev
+  total_soft_cost <- total_soft_cost + planned_dev_fee
+  
+  return(total_soft_cost)
+}
+
+# routes the zones to each development subfunction
+calc_construction_costs <- function(zone_class, lot_sqft, parcel_row, construction, density) {
+  if (parcel_row$TOD_adopt == 1 | parcel_row$TOD_proposed == 1) {
+    message(paste("TMK", parcel_row$tmk, "→ TOD parcel"))
+    return(calc_TOD_costs(zone_class, lot_sqft, parcel_row, construction, density))
+  } else if (parcel_row$Special_zone == 1) {
+    message(paste("TMK", parcel_row$tmk, "→ Special District parcel"))
+    return(calc_special_district_costs(zone_class, lot_sqft, parcel_row, construction, density))
+  } else {
+    message(paste("TMK", parcel_row$tmk, "→ Regular parcel"))
+    return(calc_regular_costs(zone_class, lot_sqft, parcel_row, construction, density))
+  }
+}
+
+# loop through parcel rows & compute
+cost_results <- list()
+
+for (i in 1:nrow(parcels)) {
+  parcel <- parcels[i, ]
+  
+  costs <- calc_construction_costs(
+    zone_class = parcel$zone_class,
+    lot_sqft = parcel$lot_sqft,
+    parcel_row = parcel,
+    construction = construction,
+    density = density
+  )
+  
+  costs$tmk <- parcel$tmk
+  costs$land_cost <- parcel$landvalue
+  cost_results[[i]] <- costs
+}
+
+project_costs <- do.call(rbind, cost_results)
+
+project_costs <- project_costs %>%
+  select(tmk, max_units, affordable_units, land_cost, hard_cost, soft_cost, construct_cost) %>%
+  mutate(total_dev_cost = land_cost + construct_cost)
+
