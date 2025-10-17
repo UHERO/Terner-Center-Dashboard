@@ -27,7 +27,7 @@ SELECTED_HEIGHT <- 10
 #=========================================================
 construction = list(
     
-  # hard construction cost per zone (need to change)
+  # marginal construction cost per square foot (edit)
   cost_per_zone = data.frame(
     zone_class  = c("A-1", "A-2", "A-3", "AMX-1", "AMX-2", "AMX-3"),
     cost_per_sf = c(170.50, 161.21, 183.70, 200.00, 266.91, 231.18),
@@ -197,8 +197,7 @@ affordability = list(
 #=========================================================
 # SOFT COST FEE VARIABLES
 # all development-related fees including permits and regulatory
-# need to find: impact & zoning fees, environmental & special permits, engineer/architect fees 
-# should we add in the good standing part?
+# need to find: impact & zoning fees, engineer/architect fees 
 #=========================================================
 fees = list(
   
@@ -244,7 +243,6 @@ fees = list(
   },
   
   # ADMINISTRATIVE FEES 
-  # not sure which ones we have to do (user input???)
   administrative = list(
     material_methods_renewal = 100,
     master_tract_review = 500,
@@ -273,20 +271,47 @@ fees = list(
     transportation_fee = NA
   ),
   
-  # INCLUSIONARY HOUSING IN-LIEU FEES (the fines)
-  inclusionary = list(
-    in_lieu_per_unit = NA
-  )
+  # WAIVER FEES 
+  waiver = 600, 
+  
+  # CIVIL ENGINEERING FEES 
+  civil = list(
+    
+    # waste water system facility charge (ROH 43-10.3, Appendix 43-C)
+    wastewater = function(num_units) {
+      # 2016/17 rate ($/ESDU)
+      charge_per_esdu <- 6616  
+      esdu_per_unit <- if(num_units > 4) 0.7 else 1.0
+      return(num_units * esdu_per_unit * charge_per_esdu)
+    },
+    
+    # erosion/sediment control plan review
+    escp = 250
+  ),
+  
+  # EA/EIS FEES 
+  environment = list(
+    ea = 600, 
+    eis = 1200
+  ), 
+  
+  # PLANNED DEVELOPMENT REVIEW FEES 
+  # $15000 flat fee for planned dev for apt 
+  planned_dev = 15000,
+  
+  # IPDT/PDT APPLICATION FEE (edit) 
+  pdt_app = NA
+  
 )
 
-# REGULATORY VARIABLES (edit these are ones from terner center)
-regulatory = list(
-  fee_per_sf   = NA,
-  fee_per_unit = NA,
-  fee_per_dollar = NA,
-  lump_sum     = NA,
-  sfa_dot_fees = c(600, 1000)
-)
+# # REGULATORY VARIABLES (edit these are ones from terner center)
+# regulatory = list(
+#   fee_per_sf   = NA,
+#   fee_per_unit = NA,
+#   fee_per_dollar = NA,
+#   lump_sum     = NA,
+#   sfa_dot_fees = c(600, 1000)
+# )
 
 #=========================================================
 # TIME RELATED VARIABLES
@@ -296,7 +321,7 @@ timing = list(
     low_rise = c(12, 18),
     mid_rise = c(18, 24),
     # use 36+ if open-ended
-    high_rise = c(24, 36)  # use 36+ if open-ended
+    high_rise = c(24, 36) 
   ),
   absorption_units_per_month = NA,
   stable_months_at_sale = NA
@@ -356,24 +381,45 @@ entitlement = list(
 )
 
 #=========================================================
-# PARKING VARIABLES
+# PARKING VARIABLES (Surface / Structured Only)
+# Based on Honolulu LUO Table 21-6.1
 #=========================================================
-parking = list(
-  # parking fee per parking space per month (for rental income, need to change)
-  park_rate = 100,  
+
+parking <- list(
+  # 1 stall per 1,000 sqft of dwelling area
+  # edit stall sqft to accurate size
+  parking_ratio = 1.00,        
+  stall_sqft    = 300,         
   
-  # 1 space per 1,000 sqft of private dwelling area
+  cost_per_stall = list(
+    surface    = 5000,         
+    structured = 20000         
+  ),
+  
+  # calculate required stalls by law
   calc_required_spaces = function(buildable_sqft) {
+    required_stalls <- buildable_sqft / 1000 * parking$parking_ratio
+    required_stalls <- ifelse(required_stalls %% 1 >= 0.5,
+                              ceiling(required_stalls),
+                              floor(required_stalls))
+    return(required_stalls)
+  },
+  
+  # calculate parking stall construction costs
+  calc_parking_cost = function(buildable_sqft, parking_type = "structured") {
+    stalls <- parking$calc_required_spaces(buildable_sqft)
+    unit_cost <- ifelse(parking_type == "surface",
+                        parking$cost_per_stall$surface,
+                        parking$cost_per_stall$structured)
+    total_cost <- stalls * unit_cost
+    total_area <- stalls * parking$stall_sqft
     
-    # adjust gross floor area by subtracting except areas (A-D)
-    required_spaces <- buildable_sqft / 1000
-    
-    # round up if >= 0.5
-    required_spaces <- ifelse(required_spaces %% 1 >= 0.5, 
-                              ceiling(required_spaces), 
-                              floor(required_spaces))
-    
-    return(required_spaces)
+    return(list(
+      stalls = stalls,
+      total_area = total_area,
+      cost_per_stall = unit_cost,
+      total_cost = total_cost
+    ))
   }
 )
 
